@@ -28,6 +28,8 @@ static void set_block_header(char *block_start, long block_size, int in_use)
 {
     long header_value = block_size | in_use;
     *((long *) block_start) = header_value;
+	
+	//reaches header 2
     *((long *) (block_start + (block_size - sizeof(long)) / sizeof(char))) = header_value;
 }
 
@@ -100,8 +102,12 @@ static char *get_previous_block(char *block_start)
  */
 static char *coalesce(char *first_block_start, char *second_block_start)
 {
-    /* TO BE COMPLETED BY THE STUDENT. */
-    return NULL;
+    long new_block_size = get_block_size(first_block_start) + get_block_size(second_block_start);
+	set_block_header(first_block_start,new_block_size, 0 );
+	
+	//only freeing the pointer, not the memeory its pointing to
+	free(second_block_start);
+    return first_block_start;
 }
 
 /*
@@ -188,9 +194,28 @@ long heap_find_avg_free_block_size(heap *h)
  */
 void heap_free(heap *h, char *payload)
 {
-  // free will deallocate the memory previously allocated by a call to malloc
-  // so we have to determine where the previous calls to malloc (???) 
-
+	
+	char * this_start = get_block_start(payload);
+	char * prev_start  = get_previous_block(this_start);
+	char * next_start = get_previous_block(this_start);
+	
+	int this_size;
+	int prev_size;
+	int next_size;
+	
+	if(block_is_in_use(next_start)){
+		this_start = collesce(this_start, next_start);
+		this_size += get_block_size(next_start);
+	}
+	if(block_is_in_use(prev_start)){
+		this_start = collesce(prev_start, this_start);
+		this_size += get_block_size(prev_start); 
+	}
+	set_block_header(this_start,this_size,0);
+	h->start = this_start;
+	free (prev_start);
+	free (next_start);
+	
   
 }
 
