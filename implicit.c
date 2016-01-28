@@ -43,7 +43,7 @@ heap *heap_create(long size, int search_alg)
     h->search_alg = search_alg;
     
     h->next = h->start;
-    set_block_header(h->start, size, 0);
+    set_block_header(h->start, size, 0); // create header and footer for entire heap
     return h;
 }
 
@@ -57,7 +57,7 @@ void heap_dispose(heap *h)
 }
 
 /*
- * Find the start of the block, given a pointer to the payload.
+ * Find the start of the block, given a pointer to the payload of a particular block.
  */
 static char *get_block_start(char *payload)
 {
@@ -65,7 +65,7 @@ static char *get_block_start(char *payload)
 }
 
 /*
- * Find the payload, given a pointer to the start of the block.
+ * Find the payload, given a pointer to the start of the required block.
  */
 static char *get_payload(char *block_start)
 {
@@ -77,7 +77,7 @@ static char *get_payload(char *block_start)
  */
 static char *get_next_block(char *block_start)
 {
-    return block_start + get_block_size(block_start) / sizeof(char);
+  return block_start + get_block_size(block_start) / sizeof(char); // sizeof(char) because char is 1 byte long
 }
 
 /*
@@ -85,8 +85,13 @@ static char *get_next_block(char *block_start)
  */
 static char *get_previous_block(char *block_start)
 {
-    /* TO BE COMPLETED BY THE STUDENT. */
-    return NULL;
+  char *current_position = block_start;
+  
+  current_position = current_position - sizeof(long)/sizeof(char); // move to beginning of previous block's footer
+  long prev_size = get_block_size(current_position); // should read previous block's size from its footer (?)
+  current_position = current_position - prev_size + sizeof(long)/sizeof(char); // move to beginning of previous block
+
+  return current_position;
 }
 
 /*
@@ -120,7 +125,30 @@ static int is_last_block(heap *h, char *block_start)
  */
 void heap_print(heap *h)
 {
-    /* TO BE COMPLETED BY THE STUDENT. */
+  long size;
+  int in_use;
+
+  // step through each block and get address, size, and in use / not in use
+  char *current_position = h->start;
+  
+  while( 1 ) {
+    size = get_block_size(current_position);
+    in_use = block_is_in_use(current_position);
+
+    printf("\nBlock at address %x\n\tSize: %d\n\tIn use: ",current_position,size);
+    if( in_use ) {
+      printf("Yes");
+    } else {
+      printf("No");
+    }
+
+    if( is_last_block(h , current_position) ) {
+      break;
+    }
+    current_position = get_next_block(current_position);
+  }
+
+  printf("\n\n\n");
 }
 
 /*
@@ -128,18 +156,42 @@ void heap_print(heap *h)
  */
 long heap_find_avg_free_block_size(heap *h)
 {
-    /* TO BE COMPLETED BY THE STUDENT. */
+  // find the sum of sizes and the number of free blocks:
+  long sum = 0;
+  int num_of_free_blocks = 0;
+  char *current_position = h->start;
+
+  while( 1 ) {
+
+    if( !block_is_in_use(current_position) ) {
+      sum += get_block_size(current_position);
+      num_of_free_blocks++;
+    }
+
+    if( is_last_block(h , current_position) ) {
+      break;
+    }
+    current_position = get_next_block(current_position);  
+  }
+
+  if( num_of_free_blocks == 0 ) {
     return 0;
+  } 
+
+  return (sum / num_of_free_blocks);
 }
 
 /*
  * Free a block on the heap h. Beware of the case where the  heap uses
  * a next fit search strategy, and h->next is pointing to a block that
- * is to be coalesced.
+ * is to be coalesced. (mean "freed" (?))
  */
 void heap_free(heap *h, char *payload)
 {
-    /* TO BE COMPLETED BY THE STUDENT. */
+  // free will deallocate the memory previously allocated by a call to malloc
+  // so we have to determine where the previous calls to malloc (???) 
+
+  
 }
 
 /*
@@ -149,8 +201,7 @@ void heap_free(heap *h, char *payload)
  */
 static long get_size_to_allocate(long user_size)
 {
-    /* TO BE COMPLETED BY THE STUDENT. */
-    return 16;
+  return user_size + 2 * (sizeof(long)/sizeof(char));
 }
 
 /*
@@ -158,40 +209,88 @@ static long get_size_to_allocate(long user_size)
  * it's more than twice as large or MAX_UNUSED_BYTES bytes larger than
  * needed.
  */
-static void *prepare_block_for_use(char *block_start, long real_size)
+static char *prepare_block_for_use(char *block_start, long real_size)
 {
-    /* TO BE COMPLETED BY THE STUDENT. */
-    return NULL;
+  long old_block_size = get_block_size(block_start);
+
+  if( old_block_size > 2*real_size || old_block_size > real_size+MAX_UNUSED_BYTES ) {
+    // then split the block: 
+    // rewrite header/footer for first half...
+    set_block_header( block_start , real_size , 1 ); // "1" b/c assume allocated (?)
+
+    // create header/footer for second half...
+    set_block_header( get_next_block(block_start) , old_block_size - real_size , 0 ); // "0" b/c NOT allocated!
+  } else {
+    // prepare block without splitting:
+    set_block_header( block_start , old_block_size , 1);
+  }
+
+  return block_start + sizeof(long) / sizeof(char); // return a pointer to the PAYLOAD 
 }
 
 /*
  * Malloc a block on the heap h, using first fit. Return NULL if no block
  * large enough to satisfy the request exits.
  */
-static void *malloc_first_fit(heap *h, long user_size)
+static char *malloc_first_fit(heap *h, long user_size)
 {
-    /* TO BE COMPLETED BY THE STUDENT. */
-    return NULL;
+  char *current_position = h->start;
+  while( block_is_in_use(current_position) || get_block_size(current_position) < user_size+2*(sizeof(long)/sizeof(char)) ) {
+    if( is_last_block( h , current_position ) ) { // then no block of correct size exists
+      return NULL;
+    }
+    current_position = get_next_block(current_position); // move to next block in memory allocator
+  }
+  return prepare_block_for_use( current_position , user_size ); // will split properly once suitable block found - points to payload
 }
 
 /*
  * Malloc a block on the heap h, using best fit. Return NULL if no block
  * large enough to satisfy the request exits.
  */
-static void *malloc_best_fit(heap *h, long user_size)
+static char *malloc_best_fit(heap *h, long user_size)
 {
-    /* TO BE COMPLETED BY THE STUDENT. */
+  char *current_position = h->start;
+  char *best_fit_position = NULL;
+  long least_wasted_space = 2147483647;
+
+  while( 1 ) {    
+    if( !block_is_in_use(current_position) && get_block_size(current_position) >= user_size+2*(sizeof(long)/sizeof(char)) ) {
+      // compute how much wasted space:
+      long wasted_space = get_block_size( current_position ) - user_size - 2*(sizeof(long)/sizeof(char));
+      if( wasted_space < least_wasted_space ) { // if current position has less wasted space, then update
+	best_fit_position = current_position;
+	least_wasted_space = wasted_space;
+      }
+    }
+    if( is_last_block( h , current_position ) ) { // exit while loop after reaching last block
+      break;
+    }
+    current_position = get_next_block(current_position);
+  }
+
+  if( best_fit_position == NULL ) {
     return NULL;
+  }
+
+  return prepare_block_for_use( best_fit_position , user_size );
 }
 
 /*
  * Malloc a block on the heap h, using next fit. Return NULL if no block
  * large enough to satisfy the request exits.
  */
-static void *malloc_next_fit(heap *h, long user_size)
+static char *malloc_next_fit(heap *h, long user_size)
 {
-    /* TO BE COMPLETED BY THE STUDENT. */
-    return NULL;
+  char *current_position = h->next;
+  while( block_is_in_use(current_position) || get_block_size(current_position) < user_size+2*(sizeof(long)/sizeof(char)) ) {
+    if( is_last_block( h , current_position ) ) { // then no block of correct size exists
+      return NULL;
+    }
+    current_position = get_next_block(current_position); // move to next block in memory allocator
+  }
+  h->next = current_position; // update the next pointer for following calls to malloc_next_fit
+  return prepare_block_for_use( current_position , user_size ); // will split properly once suitable block found - points to payload 
 }
 
 /*

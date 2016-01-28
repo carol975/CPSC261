@@ -116,19 +116,28 @@ long test_heap(int search_alg, int op_count)
 int main(int argc, char *argv[])
 {
     initialize_rng();
+
     /*
      * First make sure we can print the heap correctly.
      */
     heap *h = heap_create(HEAP_SIZE, HEAP_FIRSTFIT);
     initialize_test_heap(h);
     heap_print(h);
+    
+    // Test heap_find_average_block_size(heap):
+    printf("\nAverage Block Size: %d\n", heap_find_avg_free_block_size(h));
+
+    // Test memory allocation:
+
     heap_dispose(h);
     putchar('\n');
 
     /*
      * Now run tests on all three types of search algorithm.
      */
+    /*
     printf("First fit average block size: %ld\n", test_heap(HEAP_FIRSTFIT, 50000));
     printf("Next fit average block size: %ld\n", test_heap(HEAP_NEXTFIT, 50000));
     printf("Best fit average block size: %ld\n", test_heap(HEAP_BESTFIT, 50000));
+    */
 }
