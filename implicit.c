@@ -164,14 +164,14 @@ long heap_find_avg_free_block_size(heap *h)
 {
   // find the sum of sizes and the number of free blocks:
   long sum = 0;
-  int num_of_free_blocks = 0;
+  int  num_of_free_blocks = 0;
   char *current_position = h->start;
 
   while( 1 ) {
 
     if( !block_is_in_use(current_position) ) {
       sum += get_block_size(current_position);
-      num_of_free_blocks++;
+      ++num_of_free_blocks;
     }
 
     if( is_last_block(h , current_position) ) {
@@ -204,11 +204,11 @@ void heap_free(heap *h, char *payload)
 	int next_size;
 	
 	if(block_is_in_use(next_start)){
-		this_start = collesce(this_start, next_start);
+		this_start = coalesce(this_start, next_start);
 		this_size += get_block_size(next_start);
 	}
 	if(block_is_in_use(prev_start)){
-		this_start = collesce(prev_start, this_start);
+		this_start = coalesce(prev_start, this_start);
 		this_size += get_block_size(prev_start); 
 	}
 	set_block_header(this_start,this_size,0);
