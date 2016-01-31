@@ -4,7 +4,7 @@
 
 #include "implicit.h"
 
-
+static long h_size;
 
 
 
@@ -30,15 +30,13 @@ static long get_block_size(char *block_start)
  */
 static void set_block_header(char *block_start, long block_size, int in_use)
 {
-	printf("block size %lu, in_use %lu\n",block_size, in_use);
-	printf("or-d value is: %lu\n",(block_size | in_use));
     long header_value = block_size | in_use;
 	printf("\nthe header value is: %lu\n\n");
     *((long *) block_start) = block_size | in_use;
-	printf("bloc_start is : %lu\n",    *((long *) block_start) );
+	printf("header value is : %lu\n",   *((long *) block_start) );
 	//reaches header 2
     *((long *) (block_start + (block_size - sizeof(long)) / sizeof(char))) = block_size | in_use;
-	printf("bloc_start_two is : %lu\n",    *((long *) block_start) );
+	printf("footer value is  : %lu\n",     *((long *) (block_start + (block_size - sizeof(long)) / sizeof(char))) );
 }
 
 /*
@@ -49,6 +47,7 @@ heap *heap_create(long size, int search_alg)
     heap *h = malloc(sizeof(heap));
 
     h->size = size;
+	h_size =  size;
     h->start = malloc(size);
     h->search_alg = search_alg;
     
@@ -87,7 +86,7 @@ static char *get_payload(char *block_start)
  */
 static char *get_next_block(char *block_start)
 {
-  if(is_last_block(block_start)){return NULL;}
+  //if(is_last_block()){return NULL;}
   return block_start + get_block_size(block_start) / sizeof(char); // sizeof(char) because char is 1 byte long
 }
 
@@ -115,6 +114,7 @@ static char *get_previous_block(char *block_start)
 static char *coalesce(char *first_block_start, char *second_block_start)
 {
     long new_block_size = get_block_size(first_block_start) + get_block_size(second_block_start);
+	printf("The new block size is  %lu\n",new_block_size);
 	set_block_header(first_block_start,new_block_size, 0 );
 	
 	//only freeing the pointer, not the memeory its pointing to
@@ -347,36 +347,23 @@ void *heap_malloc(heap *h, long size)
 }
 
 void test(heap *h){
+	printf("\nThis is the test for heap_find_avg_free_block_size\n");
+    printf("\nAverage Block Size: %lu\n", heap_find_avg_free_block_size(h));
+	printf("\n===============================\n");
+	
+	
+	long first_bloc_size = get_block_size(h->start);
+	printf("The first block size is %lu\n",first_bloc_size);
 	char * allocated_bloc_start;
 	//Test for get_size_to_allocate
 	printf("\nThis is the test for get_size_to_allocate\n");
-	long user_size = 2000;
+	long user_size = 64;
 	long mem_size = get_size_to_allocate(user_size);
 	printf("the size of two hearders is: %lu\n",2 * (sizeof(long)/sizeof(char)));
 	printf("the size of user requrested memory is: %lu",user_size);
 	printf("\nmemory size for %lu required is: %lu\n",user_size,mem_size);
 	printf("\n===============================\n");
-	
-	
-	printf("\nThis is the test for get_previous_block\n");
-	char *next = get_next_block(h->start);
-	long next_block_size = get_block_size(next);
-	printf("the size of the 2nd block is: %lu\n",next_block_size);
-	
-	//Test for get_previous_block
-	char *previous = get_previous_block(next);
-	long previous_block_size = get_block_size(previous);
-	printf("the size of the previous lock of the 2nd block is: %lu\n",previous_block_size);
-	printf("\n===============================\n");
-	
-	//Test for malloc_best_Fit
-	printf("\nThis is the test for malloc_best_fit\n");
-	user_size = 40;
-	printf("Allocating for a size of %lu\n",user_size);
-	allocated_bloc_start = malloc_best_fit(h, user_size);
-	printf("\nThis is the heap after best fit malloc\n");
-	heap_print(h);
-	printf("\n===============================\n");
+
 	
 	//Test for malloc_first_fit
 	printf("\nThis is the test for malloc_first_fit\n");
@@ -395,11 +382,63 @@ void test(heap *h){
 	heap_print(h);
 	printf("\n===============================\n");
 	
+	
+	
+	
+	//Test for malloc_next_fit
+	printf("\nThis is the test for malloc_next_fit\n");
+	user_size = 56;
+	printf("Allocating for a size of %lu\n",user_size);
+	allocated_bloc_start = malloc_next_fit(h, user_size);
+	printf("\nThis is the heap after next fit malloc\n");
+	heap_print(h);
+	printf("\n===============================\n");
+	
 	//Test for prepare_block_for_use
+	printf("\nThis is the test for  ");
 	//char *payload = (char*)88;
    //char *start1 = get_block_start(payload);
      //printf("start1 is: %lu\n",sizeof(start1));
-	 
+	 //Test for malloc_best_Fit
+	printf("\nThis is the test for malloc_best_fit\n");
+	user_size = 40;
+	printf("Allocating for a size of %lu\n",user_size);
+	allocated_bloc_start = malloc_best_fit(h, user_size);
+	printf("\nThis is the heap after best fit malloc\n");
+	heap_print(h);
+	printf("\n===============================\n");
+	
+		
+	//Test for get_previous_block
+	printf("\nThis is the test for get_previous_block\n");
+	char *next = get_next_block(h->start);
+	long next_block_size = get_block_size(next);
+	printf("the size of the 2nd block is: %lu\n",next_block_size);
 	
 	
+	char *previous = get_previous_block(next);
+	long previous_block_size = get_block_size(previous);
+	printf("the size of the previous lock of the 2nd block is: %lu\n",previous_block_size);
+	printf("\n===============================\n");
+	
+	//Test for coalesce
+	printf("\nThis is the test for coalesce\n");
+	
+	printf("This is the heap before coalescing first and second blocks\n");
+	heap_print(h);
+	char *first_bloc = h->start;
+	char *first_payload = get_payload(first_bloc);
+	
+	char *second_bloc = get_next_block(first_bloc);
+	char *second_payload = get_payload(second_bloc);
+	
+	//heap_free(h,first_payload);
+	//heap_free(h,second_payload);
+	
+	char *coal_start = coalesce(first_bloc,second_bloc);
+	
+	printf("This is the heap after calescing first and second blocks\n");
+	h->start = coal_start;
+	heap_print(h);
+	printf("\n===============================\n");
 }

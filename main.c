@@ -139,7 +139,11 @@ int main(int argc, char *argv[])
     //heap_dispose(h);
     //putchar('\n');
 	
+	printf("local test started\n");
+	
     test(h);
+	
+	printf("local tests ended\n");
 		
     heap_dispose(h);
     putchar('\n');
@@ -148,11 +152,13 @@ int main(int argc, char *argv[])
     /*
      * Now run tests on all three types of search algorithm.
     */
-	/*
-    printf("Testing First fit average block\n");
-	long int avg_bloc_size = test_heap(HEAP_FIRSTFIT,2);
-	printf("first fit avg_bloc_size is : %ld",avg_bloc_size);
-    //printf("First fit average block size: %ld\n", test_heap(HEAP_FIRSTFIT, 2));
+	
+    //printf("Testing First fit average block\n");
+	//long int avg_bloc_size = test_heap(HEAP_FIRSTFIT,50000);
+	//printf("first fit avg_bloc_size is : %ld",avg_bloc_size);
+	
+	printf("Testing First fit average block\n");
+    printf("First fit average block size: %ld\n", test_heap(HEAP_FIRSTFIT, 50000));
 	printf("First fit average test passed");
 	
 	printf("Testing Next fit average block\n");
@@ -162,7 +168,7 @@ int main(int argc, char *argv[])
 	printf("Testing Best fit average block\n");
 	printf("Best fit average block size: %ld\n", test_heap(HEAP_BESTFIT, 50000));
 	printf("Best fit average test passed\n");
-	*/
+	
 	
 	//return 0;
 }
