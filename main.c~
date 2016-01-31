@@ -118,51 +118,36 @@ long mem_size;
 long user_size = 2000;
 int main(int argc, char *argv[])
 {
-
     initialize_rng();
 
     /*
      * First make sure we can print the heap correctly.
      */
-    heap *h = heap_create(HEAP_SIZE, HEAP_NEXTFIT);
+    heap *h = heap_create(HEAP_SIZE, HEAP_FIRSTFIT);
     initialize_test_heap(h);
     heap_print(h);
     
-	
     // Test heap_find_average_block_size(heap):
-    printf("\nAverage Block Size: %lu\n", heap_find_avg_free_block_size(h));
-    
-	printf("heap_find_average_block_size test completed");
-	  
+    printf("\nAverage Block Size: %d\n", heap_find_avg_free_block_size(h));
+   
+    // Test get_size_to_allocate
+	
+    mem_size = get_size_to_allocate(user_size);
+    printf("\nmem_size for %lu size requied is: %lu",user_size,mem_size);
+
+  
+
     // Test memory allocation:
      
-    //heap_dispose(h);
-    //putchar('\n');
-	
-    test(h);
-		
     heap_dispose(h);
     putchar('\n');
-    
 
     /*
      * Now run tests on all three types of search algorithm.
-    */
-	/*
-    printf("Testing First fit average block\n");
-	long int avg_bloc_size = test_heap(HEAP_FIRSTFIT,2);
-	printf("first fit avg_bloc_size is : %ld",avg_bloc_size);
-    //printf("First fit average block size: %ld\n", test_heap(HEAP_FIRSTFIT, 2));
-	printf("First fit average test passed");
-	
-	printf("Testing Next fit average block\n");
-    printf("Next fit average block size: %ld\n", test_heap(HEAP_NEXTFIT, 50000));
-	printf("Next fit average test passed\n");
+     */
     
-	printf("Testing Best fit average block\n");
-	printf("Best fit average block size: %ld\n", test_heap(HEAP_BESTFIT, 50000));
-	printf("Best fit average test passed\n");
-	*/
-	
-	//return 0;
+    printf("First fit average block size: %ld\n", test_heap(HEAP_FIRSTFIT, 50000));
+    printf("Next fit average block size: %ld\n", test_heap(HEAP_NEXTFIT, 50000));
+    printf("Best fit average block size: %ld\n", test_heap(HEAP_BESTFIT, 50000));
+   
 }

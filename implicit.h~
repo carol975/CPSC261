@@ -51,5 +51,3 @@ void heap_free(heap *h, char *payload);
  */
 void *heap_malloc(heap *h, long size);
 
-void test(heap* h);
-

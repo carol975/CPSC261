@@ -4,6 +4,10 @@
 
 #include "implicit.h"
 
+
+
+
+
 /*
  * Determine whether or not a block is in use.
  */
@@ -26,7 +30,10 @@ static long get_block_size(char *block_start)
  */
 static void set_block_header(char *block_start, long block_size, int in_use)
 {
+	printf("block size %lu, in_use %lu\n",block_size, in_use);
+	printf("or-d value is: %lu\n",(block_size | in_use));
     long header_value = block_size | in_use;
+	printf("\nthe header value is: %lu\n\n");
     *((long *) block_start) = header_value;
 	
 	//reaches header 2
@@ -89,8 +96,11 @@ static char *get_previous_block(char *block_start)
 {
   char *current_position = block_start;
   
-  current_position = current_position - sizeof(long)/sizeof(char); // move to beginning of previous block's footer
-  long prev_size = get_block_size(current_position); // should read previous block's size from its footer (?)
+  current_position = current_position - sizeof(long)/sizeof(char);
+  long prev_size =  *((long *) current_position);
+  printf("prev size is %lu\n",prev_size);
+  // move to beginning of previous block's footer
+  //long prev_size = get_block_size(current_position); // should read previous block's size from its footer (?)
   current_position = current_position - prev_size + sizeof(long)/sizeof(char); // move to beginning of previous block
 
   return current_position;
@@ -330,4 +340,31 @@ void *heap_malloc(heap *h, long size)
 	case HEAP_BESTFIT : return malloc_best_fit(h, size);
     }
     return NULL;
+}
+
+void test(heap *h){
+	//Test for get_size_to_allocate
+	printf("\nThis is the test for get_size_to_allocate\n");
+	long user_size = 2000;
+	long mem_size = get_size_to_allocate(user_size);
+	printf("the size of two hearders is: %lu\n",2 * (sizeof(long)/sizeof(char)));
+	printf("the size of user requrested memory is: %lu",user_size);
+	printf("\nmemory size for %lu required is: %lu\n",user_size,mem_size);
+	
+	printf("\nThis is the test for get_previous_block\n");
+	char *next = get_next_block(h->start);
+	long next_block_size = get_block_size(next);
+	printf("the size of the 2nd block is: %lu\n",next_block_size);
+	
+	//Test for get_previous_block
+	char *previous = get_previous_block(next);
+	long previous_block_size = get_block_size(previous);
+	printf("the size of the previous lock of the 2nd block is: %lu\n",previous_block_size);
+	
+	//Test for prepare_block_for_use
+	//char *payload = (char*)88;
+   //char *start1 = get_block_start(payload);
+     //printf("start1 is: %lu\n",sizeof(start1));
+	
+	
 }
