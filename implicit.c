@@ -34,10 +34,11 @@ static void set_block_header(char *block_start, long block_size, int in_use)
 	printf("or-d value is: %lu\n",(block_size | in_use));
     long header_value = block_size | in_use;
 	printf("\nthe header value is: %lu\n\n");
-    *((long *) block_start) = header_value;
-	
+    *((long *) block_start) = block_size | in_use;
+	printf("bloc_start is : %lu\n",    *((long *) block_start) );
 	//reaches header 2
-    *((long *) (block_start + (block_size - sizeof(long)) / sizeof(char))) = header_value;
+    *((long *) (block_start + (block_size - sizeof(long)) / sizeof(char))) = block_size | in_use;
+	printf("bloc_start_two is : %lu\n",    *((long *) block_start) );
 }
 
 /*
@@ -86,6 +87,7 @@ static char *get_payload(char *block_start)
  */
 static char *get_next_block(char *block_start)
 {
+  if(is_last_block(block_start)){return NULL;}
   return block_start + get_block_size(block_start) / sizeof(char); // sizeof(char) because char is 1 byte long
 }
 
@@ -96,7 +98,7 @@ static char *get_previous_block(char *block_start)
 {
   char *current_position = block_start;
   
-  current_position = current_position - sizeof(long)/sizeof(char);
+  current_position = current_position - (sizeof(long));///sizeof(char));
   long prev_size =  *((long *) current_position);
   printf("prev size is %lu\n",prev_size);
   // move to beginning of previous block's footer
@@ -287,20 +289,22 @@ static char *malloc_best_fit(heap *h, long user_size)
 {
   char *current_position = h->start;
   char *best_fit_position = NULL;
-  long least_wasted_space = 2147483647;
+  long most_wasted_space = 2147483647;
 
-  while( 1 ) {    
-    if( !block_is_in_use(current_position) && get_block_size(current_position) >= user_size+2*(sizeof(long)/sizeof(char)) ) {
+  while( current_position != NULL) {  
+    
+    if( !block_is_in_use(current_position) && get_block_size(current_position) >= (user_size+2*(sizeof(long)/sizeof(char))) ) {
       // compute how much wasted space:
-      long wasted_space = get_block_size( current_position ) - user_size - 2*(sizeof(long)/sizeof(char));
-      if( wasted_space < least_wasted_space ) { // if current position has less wasted space, then update
-	best_fit_position = current_position;
-	least_wasted_space = wasted_space;
+      long wasted_space = get_block_size( current_position ) - (user_size + 2*(sizeof(long)/sizeof(char)));
+      if( wasted_space < most_wasted_space ) { // if current position has less wasted space, then update
+	  best_fit_position = current_position;
+	  most_wasted_space = wasted_space;
       }
-    }
-    if( is_last_block( h , current_position ) ) { // exit while loop after reaching last block
+	  if( is_last_block( h , current_position ) ) { // exit while loop after reaching last block
       break;
+		}  
     }
+   
     current_position = get_next_block(current_position);
   }
 
@@ -343,6 +347,7 @@ void *heap_malloc(heap *h, long size)
 }
 
 void test(heap *h){
+	char * allocated_bloc_start;
 	//Test for get_size_to_allocate
 	printf("\nThis is the test for get_size_to_allocate\n");
 	long user_size = 2000;
@@ -350,6 +355,8 @@ void test(heap *h){
 	printf("the size of two hearders is: %lu\n",2 * (sizeof(long)/sizeof(char)));
 	printf("the size of user requrested memory is: %lu",user_size);
 	printf("\nmemory size for %lu required is: %lu\n",user_size,mem_size);
+	printf("\n===============================\n");
+	
 	
 	printf("\nThis is the test for get_previous_block\n");
 	char *next = get_next_block(h->start);
@@ -360,11 +367,39 @@ void test(heap *h){
 	char *previous = get_previous_block(next);
 	long previous_block_size = get_block_size(previous);
 	printf("the size of the previous lock of the 2nd block is: %lu\n",previous_block_size);
+	printf("\n===============================\n");
+	
+	//Test for malloc_best_Fit
+	printf("\nThis is the test for malloc_best_fit\n");
+	user_size = 40;
+	printf("Allocating for a size of %lu\n",user_size);
+	allocated_bloc_start = malloc_best_fit(h, user_size);
+	printf("\nThis is the heap after best fit malloc\n");
+	heap_print(h);
+	printf("\n===============================\n");
+	
+	//Test for malloc_first_fit
+	printf("\nThis is the test for malloc_first_fit\n");
+	
+	printf("Allocating for a size of %lu\n",user_size);
+	printf("\nThis is the heap before first fit malloc\n");
+	printf("\n");
+	heap_print(h);
+	allocated_bloc_start = malloc_first_fit(h, user_size);
+	printf("\nThis is the heap after first fit malloc\n");
+	heap_print(h);
+	
+	printf("\n Allocating for a size of 9999999\n");
+	allocated_bloc_start = malloc_first_fit(h, 9999999);
+	printf("\nThis is the heap after first fit malloc\n");
+	heap_print(h);
+	printf("\n===============================\n");
 	
 	//Test for prepare_block_for_use
 	//char *payload = (char*)88;
    //char *start1 = get_block_start(payload);
      //printf("start1 is: %lu\n",sizeof(start1));
+	 
 	
 	
 }
